@@ -1,0 +1,116 @@
+import SwiftUI
+
+protocol Receiveable { //받는것
+    func recieved (data: Any, from: Sendable)
+}
+
+protocol Sendable { //보내는것
+    var from: Sendable { get }
+    var to: Receiveable? { get }
+    
+    func send(data: Any) //Any는 스위프트의 모든 데이터 타입을 사용할 수 있다는 뜻.
+    
+    static func isSendableInstance(_ instance: Any) -> Bool // _는 와일드카드 식별자를 사용해 전달인자 레이블을 사용하지 않는 함수를 구현함.
+}
+
+//수신,발신이 가능한 Message 클래스
+class Message: Sendable, Receiveable {
+    //발신은 발신 가능한 객체, 즉 Sendable프로토콜을 준수하는 타입의 인스턴스 이어야함.
+    var from: Sendable {
+        return self
+    }
+    
+    //상대방은 수신 가능한 객체, 즉 Receiveable 프로토콜을 준수하은 타입의 인스턴스 이어야 함.
+    var to: Receiveable?
+    
+    //메세지를 발신합니다.
+    func send(data: Any) {
+        guard let receiver: Receiveable = self.to else {
+            print("Message has no receiver.")
+            return
+        }
+        //수신 가능한 인스턴스의 recieved 메서드를 호출합니다.
+        receiver.recieved(data: data, from: self.from)
+    }
+
+    //메세지를 수신합니다.
+    func recieved(data: Any, from: Sendable) {
+        print("Message received \(data) from \(from)")
+    }
+    
+    //class 메서드이므로 상속 가능
+    class func isSendableInstance(_ instance: Any) -> Bool {
+        if let sendalbeInstance: Sendable = instance as? Sendable {
+            return sendalbeInstance.to != nil
+        }
+        return false
+    }
+}
+
+class Mail: Sendable, Receiveable {
+    //발신은 발신 가능한 객체, 즉 Sendable프로토콜을 준수하는 타입의 인스턴스 이어야함.
+    var from: Sendable {
+        return self
+    }
+    
+    //상대방은 수신 가능한 객체, 즉 Receiveable 프로토콜을 준수하은 타입의 인스턴스 이어야 함.
+    var to: Receiveable?
+    
+    //메세지를 발신합니다.
+    func send(data: Any) {
+        guard let receiver: Receiveable = self.to else {
+            print("Mail has no receiver.")
+            return
+        }
+        //수신 가능한 인스턴스의 recieved 메서드를 호출합니다.
+        receiver.recieved(data: data, from: self.from)
+    }
+
+    //메세지를 수신합니다.
+    func recieved(data: Any, from: Sendable) {
+        print("Mail received \(data) from \(from)")
+    }
+    
+    //static 메서드는 상속이 불가합니다.
+    static func isSendableInstance(_ instance: Any) -> Bool {
+        if let sendalbeInstance: Sendable = instance as? Sendable { //as?는 특정 type의 옵셔널을 반환합니다.
+            return sendalbeInstance.to != nil
+        }
+        return false
+    }
+}
+
+//두 Message 인스턴스를 생성합니다.
+let myPhoneMessage: Message = Message()
+let yourPhoneMessage: Message = Message()
+
+//아직 수신받을 인스턴스가 없습니다.
+myPhoneMessage.send(data: "Hello") //Message has no receiver.
+
+//Message instance 는 발신과 수신이 모두 가능하므로 메시지를 주고 받을수 있습니다.
+myPhoneMessage.to = yourPhoneMessage
+myPhoneMessage.send(data: "Hello") //Message received Hello from Mesaage
+
+//두 Mail 인스턴스를 생성합니다.
+let myMail: Mail = Mail()
+let yourMail: Mail = Mail()
+
+myMail.send(data: "Hi") //Mail has no receiver.
+
+//Mail과 Message 모두 Sendable과 Receiveable 프로토콜을 준수하므로 서로 주고받을수 있습니다.
+myMail.to = yourMail
+myMail.send(data: "Hi") //Mail received Hi from Mail
+
+myMail.to = myPhoneMessage
+myMail.send(data: "Bye") //Message received Bye from Mail.
+
+//String은 Sendable 프로토콜을 준수하지 않습니다.
+Message.isSendableInstance("Hello") //false
+Message.isSendableInstance(myPhoneMessage) //true
+
+//yourPhoneMessage는 to 프로퍼티가 설정되지 않아 보낼 수 없는 상태입니다.
+Message.isSendableInstance(yourPhoneMessage) //false
+Message.isSendableInstance(myPhoneMessage) //true
+Message.isSendableInstance(myMail) //true
+
+
